@@ -1,0 +1,14 @@
+s3:
+   bucket: "s3-dns-anycast"
+   prefix: ""
+   region: "eu-north-1"
+   # profile: "default"  # AWS profile (optional)
+   # endpoint: ""        # For non-AWS S3 (optional)
+
+clickhouse:
+   address: "localhost:9000"
+   database: "dsc"
+   username: "default"
+   password: ""
+
+poll_interval: 60  # seconds
