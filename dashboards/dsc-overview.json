@@ -24,25 +24,101 @@
     }
   ],
   "title": "DSC Overview",
-  "uid": "dsc-overview",
+  "uid": "dsc-overview-v3",
   "tags": ["dsc", "dns"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 3,
   "refresh": "1m",
   "time": {
-    "from": "now-24h",
+    "from": "now-7d",
     "to": "now"
   },
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "hostname",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
+        },
+        "query": "SELECT DISTINCT hostname FROM dsc.observations ORDER BY hostname",
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 1,
+        "label": "Host"
+      },
+      {
+        "name": "site",
+        "type": "custom",
+        "query": "All : %, Gothenburg : got-%, Stockholm : sto-%",
+        "multi": false,
+        "includeAll": false,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "%"
+        },
+        "label": "Site"
+      },
+      {
+        "name": "qtype_filter",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
+        },
+        "query": "SELECT DISTINCT multiIf(key2 = '1', 'A', key2 = '2', 'NS', key2 = '5', 'CNAME', key2 = '6', 'SOA', key2 = '12', 'PTR', key2 = '15', 'MX', key2 = '16', 'TXT', key2 = '28', 'AAAA', key2 = '33', 'SRV', key2 = '43', 'DS', key2 = '48', 'DNSKEY', key2 = '59', 'CDS', key2 = '65', 'HTTPS', concat('TYPE', key2)) AS qtype FROM dsc.observations WHERE dataset = 'qtype' ORDER BY qtype",
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 1,
+        "label": "Qtype"
+      },
+      {
+        "name": "rcode_filter",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
+        },
+        "query": "SELECT DISTINCT multiIf(key2 = '0', 'NOERROR', key2 = '1', 'FORMERR', key2 = '2', 'SERVFAIL', key2 = '3', 'NXDOMAIN', key2 = '4', 'NOTIMP', key2 = '5', 'REFUSED', key2 = '7', 'YXRRSET', key2 = '9', 'NOTAUTH', concat('RCODE', key2)) AS rcode FROM dsc.observations WHERE dataset = 'rcode' ORDER BY rcode",
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 1,
+        "label": "Rcode"
+      }
+    ]
   },
   "panels": [
     {
+      "id": 100,
+      "title": "QPS by location",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
       "id": 1,
-      "title": "Total QPS (all hosts, all query types)",
+      "title": "QPS — total + per site + per host",
+      "description": "Total aggregate line always shown. Per-site and per-host breakdowns stack underneath. Use Host and Site filters to narrow down.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 1 },
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${DS_CLICKHOUSE}"
@@ -52,9 +128,169 @@
           "unit": "qps",
           "custom": {
             "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "TOTAL" },
+            "properties": [
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "white" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "B" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 5] } },
+              { "id": "custom.lineWidth", "value": 2 }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "C" },
+            "properties": [
+              { "id": "custom.fillOpacity", "value": 10 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max", "lastNotNull"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  'TOTAL' AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time\nORDER BY time",
+          "format": 0,
+          "queryType": "timeseries"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    hostname LIKE 'got-%', 'Gothenburg',\n    hostname LIKE 'sto-%', 'Stockholm',\n    'Other'\n  ) AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "format": 0,
+          "queryType": "timeseries"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  hostname AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "format": 0,
+          "queryType": "timeseries"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "title": "QPS by response code",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "title": "QPS by rcode — total + per rcode",
+      "description": "Total QPS as a bold line. Per-rcode breakdown underneath. Use the Rcode filter to select specific rcodes.",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "qps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "TOTAL" },
+            "properties": [
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.fillOpacity", "value": 0 },
+              { "id": "custom.stacking", "value": { "mode": "none" } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "white" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  'TOTAL' AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'rcode'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time\nORDER BY time",
+          "format": 0,
+          "queryType": "timeseries"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    key2 = '0', 'NOERROR',\n    key2 = '1', 'FORMERR',\n    key2 = '2', 'SERVFAIL',\n    key2 = '3', 'NXDOMAIN',\n    key2 = '4', 'NOTIMP',\n    key2 = '5', 'REFUSED',\n    key2 = '7', 'YXRRSET',\n    key2 = '9', 'NOTAUTH',\n    concat('RCODE', key2)\n  ) AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'rcode'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND multiIf(\n    key2 = '0', 'NOERROR',\n    key2 = '1', 'FORMERR',\n    key2 = '2', 'SERVFAIL',\n    key2 = '3', 'NXDOMAIN',\n    key2 = '4', 'NOTIMP',\n    key2 = '5', 'REFUSED',\n    key2 = '7', 'YXRRSET',\n    key2 = '9', 'NOTAUTH',\n    concat('RCODE', key2)\n  ) IN ($rcode_filter)\n  AND $__timeFilter(timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "format": 0,
+          "queryType": "timeseries"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "NXDOMAIN ratio (%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10
-          }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 30 },
+              { "color": "red", "value": 50 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
         },
         "overrides": []
       },
@@ -70,56 +306,17 @@
             "uid": "${DS_CLICKHOUSE}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND $__timeFilter(timestamp)\nGROUP BY time\nORDER BY time",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  100.0 * sumIf(value, key2 = '3') / sum(value) AS nxdomain_pct\nFROM dsc.observations\nWHERE dataset = 'rcode'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time\nHAVING sum(value) > 0\nORDER BY time",
           "format": 0,
           "queryType": "timeseries"
         }
       ]
     },
     {
-      "id": 2,
-      "title": "QPS per host",
-      "type": "timeseries",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 8 },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "${DS_CLICKHOUSE}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "qps",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 20,
-            "stacking": { "mode": "normal", "group": "A" }
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max"] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "${DS_CLICKHOUSE}"
-          },
-          "editorType": "sql",
-          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  hostname,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND $__timeFilter(timestamp)\nGROUP BY time, hostname\nORDER BY time, hostname",
-          "format": 0,
-          "queryType": "timeseries"
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "title": "Query type distribution",
+      "id": 4,
+      "title": "Rcode distribution",
       "type": "piechart",
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${DS_CLICKHOUSE}"
@@ -143,17 +340,25 @@
             "uid": "${DS_CLICKHOUSE}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT\n  multiIf(\n    key2 = '1', 'A',\n    key2 = '2', 'NS',\n    key2 = '5', 'CNAME',\n    key2 = '6', 'SOA',\n    key2 = '12', 'PTR',\n    key2 = '15', 'MX',\n    key2 = '16', 'TXT',\n    key2 = '28', 'AAAA',\n    key2 = '33', 'SRV',\n    key2 = '43', 'DS',\n    key2 = '46', 'RRSIG',\n    key2 = '47', 'NSEC',\n    key2 = '48', 'DNSKEY',\n    key2 = '50', 'NSEC3',\n    key2 = '52', 'TLSA',\n    key2 = '65', 'HTTPS',\n    key2 = '257', 'CAA',\n    concat('TYPE', key2)\n  ) AS qtype,\n  sum(value) AS total\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND $__timeFilter(timestamp)\nGROUP BY qtype\nORDER BY total DESC",
+          "rawSql": "SELECT\n  multiIf(\n    key2 = '0', 'NOERROR',\n    key2 = '1', 'FORMERR',\n    key2 = '2', 'SERVFAIL',\n    key2 = '3', 'NXDOMAIN',\n    key2 = '4', 'NOTIMP',\n    key2 = '5', 'REFUSED',\n    key2 = '7', 'YXRRSET',\n    key2 = '9', 'NOTAUTH',\n    concat('RCODE', key2)\n  ) AS rcode,\n  sum(value) AS total\nFROM dsc.observations\nWHERE dataset = 'rcode'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY rcode\nORDER BY total DESC",
           "format": 1,
           "queryType": "table"
         }
       ]
     },
     {
-      "id": 4,
-      "title": "Response codes over time",
+      "id": 300,
+      "title": "QPS by query type",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "collapsed": false
+    },
+    {
+      "id": 12,
+      "title": "QPS by qtype — total + per type",
+      "description": "Total QPS as a bold line. Per-qtype breakdown stacked underneath. Use the Qtype filter to select specific types.",
       "type": "timeseries",
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 31 },
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${DS_CLICKHOUSE}"
@@ -163,15 +368,25 @@
           "unit": "qps",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "fillOpacity": 15,
             "stacking": { "mode": "normal", "group": "A" }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "TOTAL" },
+            "properties": [
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.fillOpacity", "value": 0 },
+              { "id": "custom.stacking", "value": { "mode": "none" } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "white" } }
+            ]
+          }
+        ]
       },
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max"] },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
@@ -182,7 +397,155 @@
             "uid": "${DS_CLICKHOUSE}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    key2 = '0', 'NOERROR',\n    key2 = '1', 'FORMERR',\n    key2 = '2', 'SERVFAIL',\n    key2 = '3', 'NXDOMAIN',\n    key2 = '4', 'NOTIMP',\n    key2 = '5', 'REFUSED',\n    key2 = '9', 'NOTAUTH',\n    concat('RCODE', key2)\n  ) AS rcode,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'rcode'\n  AND $__timeFilter(timestamp)\nGROUP BY time, rcode\nORDER BY time, rcode",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  'TOTAL' AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time\nORDER BY time",
+          "format": 0,
+          "queryType": "timeseries"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    key2 = '1', 'A',\n    key2 = '2', 'NS',\n    key2 = '5', 'CNAME',\n    key2 = '6', 'SOA',\n    key2 = '12', 'PTR',\n    key2 = '15', 'MX',\n    key2 = '16', 'TXT',\n    key2 = '18', 'AFSDB',\n    key2 = '28', 'AAAA',\n    key2 = '33', 'SRV',\n    key2 = '35', 'NAPTR',\n    key2 = '43', 'DS',\n    key2 = '44', 'SSHFP',\n    key2 = '46', 'RRSIG',\n    key2 = '47', 'NSEC',\n    key2 = '48', 'DNSKEY',\n    key2 = '50', 'NSEC3',\n    key2 = '51', 'NSEC3PARAM',\n    key2 = '52', 'TLSA',\n    key2 = '59', 'CDS',\n    key2 = '60', 'CDNSKEY',\n    key2 = '62', 'CSYNC',\n    key2 = '64', 'SVCB',\n    key2 = '65', 'HTTPS',\n    key2 = '252', 'AXFR',\n    key2 = '255', 'ANY',\n    key2 = '257', 'CAA',\n    concat('TYPE', key2)\n  ) AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND multiIf(\n    key2 = '1', 'A',\n    key2 = '2', 'NS',\n    key2 = '5', 'CNAME',\n    key2 = '6', 'SOA',\n    key2 = '12', 'PTR',\n    key2 = '15', 'MX',\n    key2 = '16', 'TXT',\n    key2 = '18', 'AFSDB',\n    key2 = '28', 'AAAA',\n    key2 = '33', 'SRV',\n    key2 = '35', 'NAPTR',\n    key2 = '43', 'DS',\n    key2 = '44', 'SSHFP',\n    key2 = '46', 'RRSIG',\n    key2 = '47', 'NSEC',\n    key2 = '48', 'DNSKEY',\n    key2 = '50', 'NSEC3',\n    key2 = '51', 'NSEC3PARAM',\n    key2 = '52', 'TLSA',\n    key2 = '59', 'CDS',\n    key2 = '60', 'CDNSKEY',\n    key2 = '62', 'CSYNC',\n    key2 = '64', 'SVCB',\n    key2 = '65', 'HTTPS',\n    key2 = '252', 'AXFR',\n    key2 = '255', 'ANY',\n    key2 = '257', 'CAA',\n    concat('TYPE', key2)\n  ) IN ($qtype_filter)\n  AND $__timeFilter(timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "format": 0,
+          "queryType": "timeseries"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Query type distribution",
+      "type": "piechart",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 41 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  multiIf(\n    key2 = '1', 'A',\n    key2 = '2', 'NS',\n    key2 = '5', 'CNAME',\n    key2 = '6', 'SOA',\n    key2 = '12', 'PTR',\n    key2 = '15', 'MX',\n    key2 = '16', 'TXT',\n    key2 = '18', 'AFSDB',\n    key2 = '28', 'AAAA',\n    key2 = '33', 'SRV',\n    key2 = '35', 'NAPTR',\n    key2 = '43', 'DS',\n    key2 = '44', 'SSHFP',\n    key2 = '46', 'RRSIG',\n    key2 = '47', 'NSEC',\n    key2 = '48', 'DNSKEY',\n    key2 = '50', 'NSEC3',\n    key2 = '51', 'NSEC3PARAM',\n    key2 = '52', 'TLSA',\n    key2 = '59', 'CDS',\n    key2 = '60', 'CDNSKEY',\n    key2 = '62', 'CSYNC',\n    key2 = '64', 'SVCB',\n    key2 = '65', 'HTTPS',\n    key2 = '252', 'AXFR',\n    key2 = '255', 'ANY',\n    key2 = '257', 'CAA',\n    concat('TYPE', key2)\n  ) AS qtype,\n  sum(value) AS total\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY qtype\nORDER BY total DESC",
+          "format": 1,
+          "queryType": "table"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "SOA QPS per host",
+      "description": "SOA queries often dominate due to monitoring/polling. Shown separately to avoid drowning other qtypes.",
+      "type": "timeseries",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 41 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "qps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  hostname,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'qtype'\n  AND key2 = '6'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time, hostname\nORDER BY time, hostname",
+          "format": 0,
+          "queryType": "timeseries"
+        }
+      ]
+    },
+    {
+      "id": 400,
+      "title": "Transport (IPv4/IPv6 + TCP/UDP)",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 50 },
+      "collapsed": false
+    },
+    {
+      "id": 13,
+      "title": "Transport breakdown — requires DSC ip_version/transport datasets",
+      "description": "This panel requires DSC to collect ip_version and transport datasets. Check your dsc.conf on the collector hosts. See panel text for details.",
+      "type": "text",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 51 },
+      "options": {
+        "mode": "markdown",
+        "content": "### Transport data not yet available\n\nThe IPv4/IPv6 and TCP/UDP breakdown requires additional DSC datasets to be enabled on collector hosts. Add these to your `dsc.conf`:\n\n```\ndataset ip_version dns All:null Qtype:qtype ip_version:ip_version queries-only;\ndataset transport dns All:null Qtype:qtype Transport:transport queries-only;\n```\n\nOnce data arrives, this section will be replaced with transport breakdown panels."
+      }
+    },
+    {
+      "id": 500,
+      "title": "Clients",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 55 },
+      "collapsed": false
+    },
+    {
+      "id": 8,
+      "title": "Top 10 client subnets over time",
+      "type": "timeseries",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 56 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "qps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "WITH top_subnets AS (\n  SELECT key2\n  FROM dsc.observations\n  WHERE dataset = 'client_subnet'\n    AND hostname IN ($hostname)\n    AND hostname LIKE '$site'\n    AND $__timeFilter(timestamp)\n  GROUP BY key2\n  ORDER BY sum(value) DESC\n  LIMIT 10\n)\nSELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  key2 AS subnet,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'client_subnet'\n  AND key2 IN (SELECT key2 FROM top_subnets)\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time, subnet\nORDER BY time, subnet",
           "format": 0,
           "queryType": "timeseries"
         }
@@ -192,7 +555,7 @@
       "id": 5,
       "title": "Top 20 client subnets",
       "type": "table",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 56 },
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${DS_CLICKHOUSE}"
@@ -224,7 +587,68 @@
             "uid": "${DS_CLICKHOUSE}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT\n  key2 AS subnet,\n  sum(value) AS queries\nFROM dsc.observations\nWHERE dataset = 'client_subnet'\n  AND $__timeFilter(timestamp)\nGROUP BY subnet\nORDER BY queries DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  key2 AS subnet,\n  sum(value) AS queries\nFROM dsc.observations\nWHERE dataset = 'client_subnet'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY subnet\nORDER BY queries DESC\nLIMIT 20",
+          "format": 1,
+          "queryType": "table"
+        }
+      ]
+    },
+    {
+      "id": 600,
+      "title": "Operations",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 65 },
+      "collapsed": false
+    },
+    {
+      "id": 10,
+      "title": "Last data received per host",
+      "description": "Detects hosts that stopped reporting DSC data.",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 66 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "age_minutes" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 10 },
+                    { "color": "red", "value": 30 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  hostname,\n  max(timestamp) AS last_seen,\n  dateDiff('minute', max(timestamp), now()) AS age_minutes\nFROM dsc.observations\nGROUP BY hostname\nORDER BY hostname",
           "format": 1,
           "queryType": "table"
         }
