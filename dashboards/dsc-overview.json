@@ -24,7 +24,7 @@
     }
   ],
   "title": "DSC Overview",
-  "uid": "dsc-overview-v3",
+  "uid": "dsc-overview-v4",
   "tags": ["dsc", "dns"],
   "timezone": "",
   "schemaVersion": 39,
@@ -330,7 +330,7 @@
       "options": {
         "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
         "pieType": "donut",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true }
       },
       "targets": [
         {
@@ -432,7 +432,7 @@
       "options": {
         "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
         "pieType": "donut",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true }
       },
       "targets": [
         {
@@ -496,14 +496,98 @@
     },
     {
       "id": 13,
-      "title": "Transport breakdown — requires DSC ip_version/transport datasets",
-      "description": "This panel requires DSC to collect ip_version and transport datasets. Check your dsc.conf on the collector hosts. See panel text for details.",
-      "type": "text",
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 51 },
+      "title": "QPS by transport",
+      "description": "Breakdown by IPv4/UDP, IPv4/TCP, IPv6/UDP, IPv6/TCP. Total as bold white line.",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 51 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "qps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "TOTAL" },
+            "properties": [
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.fillOpacity", "value": 0 },
+              { "id": "custom.stacking", "value": { "mode": "none" } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "white" } }
+            ]
+          }
+        ]
+      },
       "options": {
-        "mode": "markdown",
-        "content": "### Transport data not yet available\n\nThe IPv4/IPv6 and TCP/UDP breakdown requires additional DSC datasets to be enabled on collector hosts. Add these to your `dsc.conf`:\n\n```\ndataset ip_version dns All:null Qtype:qtype ip_version:ip_version queries-only;\ndataset transport dns All:null Qtype:qtype Transport:transport queries-only;\n```\n\nOnce data arrives, this section will be replaced with transport breakdown panels."
-      }
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  'TOTAL' AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'ip_version_vs_transport'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time\nORDER BY time",
+          "format": 0,
+          "queryType": "timeseries"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(timestamp, INTERVAL 5 minute) AS time,\n  concat(key1, '/', key2) AS series,\n  sum(value) / 300.0 AS qps\nFROM dsc.observations\nWHERE dataset = 'ip_version_vs_transport'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "format": 0,
+          "queryType": "timeseries"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Transport distribution",
+      "type": "piechart",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 51 },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  concat(key1, '/', key2) AS transport,\n  sum(value) AS total\nFROM dsc.observations\nWHERE dataset = 'ip_version_vs_transport'\n  AND hostname IN ($hostname)\n  AND hostname LIKE '$site'\n  AND $__timeFilter(timestamp)\nGROUP BY transport\nORDER BY total DESC",
+          "format": 1,
+          "queryType": "table"
+        }
+      ]
     },
     {
       "id": 500,

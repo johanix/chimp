@@ -1,0 +1,1118 @@
+# sites.yaml — source of truth for (provider, site) → location + tags.
+#
+# Synced into the ClickHouse table dsc.sites by `chimporter sync-sites`.
+# Dashboards LEFT JOIN observations against this table to get country,
+# region tags, coordinates, and service type for aggregation and geomap
+# rendering.
+#
+# One entry per physical site. The `service` field distinguishes anycast
+# vs unicast sites (a property of the deployment, not of the API feed).
+# All sites are currently fetched via the netnod-uni API (v2) — the v1
+# netnod-any API is being retired because v2 is expected to return a
+# superset of sites once Netnod confirms.
+#
+# Tags are free-form strings. Sites can belong to multiple tags; queries
+# filter with has(tags, 'Nordics'). Typical uses today:
+#   - Europe, Asia, Africa, North America, South America, Oceania (continents)
+#   - Nordics (Sweden, Norway, Denmark, Finland, Iceland + autonomous)
+#
+# country_iso is ISO 3166-1 alpha-2 (SE, NO, US, JP, ...). Used for
+# choropleth maps.
+#
+# All sites currently have real locations — no PLACEHOLDER entries.
+
+version: 1
+
+sites:
+
+  # --- Europe ---
+
+  - provider: netnod-uni
+    site: AMX
+    service: anycast
+    city: Amsterdam
+    country: Netherlands
+    country_iso: NL
+    tags: [Europe]
+    lat: 52.3676
+    lon: 4.9041
+    notes: Amsterdam alternate node
+
+  - provider: netnod-uni
+    site: AMZ
+    service: anycast
+    city: Amsterdam
+    country: Netherlands
+    country_iso: NL
+    tags: [Europe]
+    lat: 52.3676
+    lon: 4.9041
+    notes: Amsterdam alternate node
+
+  - provider: netnod-uni
+    site: BER
+    service: anycast
+    city: Berlin
+    country: Germany
+    country_iso: DE
+    tags: [Europe]
+    lat: 52.5200
+    lon: 13.4050
+
+  - provider: netnod-uni
+    site: BNX
+    service: anycast
+    city: Banja Luka
+    country: Bosnia and Herzegovina
+    country_iso: BA
+    tags: [Europe]
+    lat: 44.7722
+    lon: 17.1910
+
+  - provider: netnod-uni
+    site: BTS
+    service: anycast
+    city: Bratislava
+    country: Slovakia
+    country_iso: SK
+    tags: [Europe]
+    lat: 48.1486
+    lon: 17.1077
+
+  - provider: netnod-uni
+    site: CDG
+    service: anycast
+    city: Paris
+    country: France
+    country_iso: FR
+    tags: [Europe]
+    lat: 48.8566
+    lon: 2.3522
+    notes: CDG site
+
+  - provider: netnod-uni
+    site: CMX
+    service: anycast
+    city: Copenhagen
+    country: Denmark
+    country_iso: DK
+    tags: [Europe, Nordics]
+    lat: 55.6761
+    lon: 12.5683
+    notes: Copenhagen alternate node
+
+  - provider: netnod-uni
+    site: CPH
+    service: anycast
+    city: Copenhagen
+    country: Denmark
+    country_iso: DK
+    tags: [Europe, Nordics]
+    lat: 55.6761
+    lon: 12.5683
+
+  - provider: netnod-uni
+    site: DEX
+    service: anycast
+    city: Frankfurt
+    country: Germany
+    country_iso: DE
+    tags: [Europe]
+    lat: 50.1109
+    lon: 8.6821
+    notes: DE-CIX Frankfurt
+
+  - provider: netnod-uni
+    site: FIX
+    service: anycast
+    city: Helsinki
+    country: Finland
+    country_iso: FI
+    tags: [Europe, Nordics]
+    lat: 60.1699
+    lon: 24.9384
+    notes: FIX (Finnish Internet Exchange)
+
+  - provider: netnod-uni
+    site: GOT
+    service: anycast
+    city: Gothenburg
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 57.7089
+    lon: 11.9746
+
+  - provider: netnod-uni
+    site: HEL
+    service: anycast
+    city: Helsinki
+    country: Finland
+    country_iso: FI
+    tags: [Europe, Nordics]
+    lat: 60.1699
+    lon: 24.9384
+
+  - provider: netnod-uni
+    site: LJU
+    service: anycast
+    city: Ljubljana
+    country: Slovenia
+    country_iso: SI
+    tags: [Europe]
+    lat: 46.0569
+    lon: 14.5058
+
+  - provider: netnod-uni
+    site: LNX
+    service: anycast
+    city: London
+    country: United Kingdom
+    country_iso: GB
+    tags: [Europe]
+    lat: 51.5074
+    lon: -0.1278
+
+  - provider: netnod-uni
+    site: LUL
+    service: anycast
+    city: Luleå
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 65.5848
+    lon: 22.1547
+
+  - provider: netnod-uni
+    site: LUX
+    service: anycast
+    city: Luxembourg
+    country: Luxembourg
+    country_iso: LU
+    tags: [Europe]
+    lat: 49.6116
+    lon: 6.1319
+
+  - provider: netnod-uni
+    site: MIX
+    service: anycast
+    city: Milan
+    country: Italy
+    country_iso: IT
+    tags: [Europe]
+    lat: 45.4642
+    lon: 9.1900
+    notes: MIX (Milano Internet Exchange)
+
+  - provider: netnod-uni
+    site: NIX
+    service: anycast
+    city: Oslo
+    country: Norway
+    country_iso: NO
+    tags: [Europe, Nordics]
+    lat: 59.9139
+    lon: 10.7522
+    notes: NIX (Norwegian Internet Exchange)
+
+  - provider: netnod-uni
+    site: PAR
+    service: anycast
+    city: Paris
+    country: France
+    country_iso: FR
+    tags: [Europe]
+    lat: 48.8566
+    lon: 2.3522
+    notes: Non-CDG Paris site
+
+  - provider: netnod-uni
+    site: PLX
+    service: anycast
+    city: Warsaw
+    country: Poland
+    country_iso: PL
+    tags: [Europe]
+    lat: 52.2297
+    lon: 21.0122
+    notes: PLIX (Polish Internet Exchange)
+
+  - provider: netnod-uni
+    site: RIX
+    service: anycast
+    city: Riga
+    country: Latvia
+    country_iso: LV
+    tags: [Europe]
+    lat: 56.9496
+    lon: 24.1052
+
+  - provider: netnod-uni
+    site: RKV
+    service: anycast
+    city: Reykjavik
+    country: Iceland
+    country_iso: IS
+    tags: [Europe, Nordics]
+    lat: 64.1466
+    lon: -21.9426
+
+  - provider: netnod-uni
+    site: ROX
+    service: anycast
+    city: Bucharest
+    country: Romania
+    country_iso: RO
+    tags: [Europe]
+    lat: 44.4268
+    lon: 26.1025
+
+  - provider: netnod-uni
+    site: SDL
+    service: anycast
+    city: Sundsvall
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 62.3908
+    lon: 17.3069
+
+  - provider: netnod-uni
+    site: SOF
+    service: anycast
+    city: Sofia
+    country: Bulgaria
+    country_iso: BG
+    tags: [Europe]
+    lat: 42.6977
+    lon: 23.3219
+
+  - provider: netnod-uni
+    site: SOX
+    service: anycast
+    city: Belgrade
+    country: Serbia
+    country_iso: RS
+    tags: [Europe]
+    lat: 44.7866
+    lon: 20.4489
+    notes: SOX (Serbian Open Exchange)
+
+  - provider: netnod-uni
+    site: STH
+    service: anycast
+    city: Stockholm
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 59.3293
+    lon: 18.0686
+    notes: Stockholm alternate node
+
+  - provider: netnod-uni
+    site: STM
+    service: anycast
+    city: Stockholm
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 59.3293
+    lon: 18.0686
+    notes: Stockholm alternate node
+
+  - provider: netnod-uni
+    site: STO
+    service: anycast
+    city: Stockholm
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 59.3293
+    lon: 18.0686
+    notes: Stockholm
+
+  - provider: netnod-uni
+    site: TLL
+    service: anycast
+    city: Tallinn
+    country: Estonia
+    country_iso: EE
+    tags: [Europe]
+    lat: 59.4370
+    lon: 24.7536
+
+  - provider: netnod-uni
+    site: TOS
+    service: anycast
+    city: Tromsø
+    country: Norway
+    country_iso: NO
+    tags: [Europe, Nordics]
+    lat: 69.6496
+    lon: 18.9560
+
+  - provider: netnod-uni
+    site: VNO
+    service: anycast
+    city: Vilnius
+    country: Lithuania
+    country_iso: LT
+    tags: [Europe]
+    lat: 54.6872
+    lon: 25.2797
+
+  - provider: netnod-uni
+    site: WIE
+    service: anycast
+    city: Wiesbaden
+    country: Germany
+    country_iso: DE
+    tags: [Europe]
+    lat: 50.0826
+    lon: 8.2493
+
+  - provider: netnod-uni
+    site: ZRH
+    service: anycast
+    city: Zurich
+    country: Switzerland
+    country_iso: CH
+    tags: [Europe]
+    lat: 47.3769
+    lon: 8.5417
+
+  # --- Asia ---
+
+  - provider: netnod-uni
+    site: ANK
+    service: anycast
+    city: Ankara
+    country: Turkey
+    country_iso: TR
+    tags: [Asia]
+    lat: 39.9334
+    lon: 32.8597
+
+  - provider: netnod-uni
+    site: BAH
+    service: anycast
+    city: Manama
+    country: Bahrain
+    country_iso: BH
+    tags: [Asia]
+    lat: 26.2285
+    lon: 50.5860
+
+  - provider: netnod-uni
+    site: BKK
+    service: anycast
+    city: Bangkok
+    country: Thailand
+    country_iso: TH
+    tags: [Asia]
+    lat: 13.7563
+    lon: 100.5018
+
+  - provider: netnod-uni
+    site: DBI
+    service: anycast
+    city: Dubai
+    country: United Arab Emirates
+    country_iso: AE
+    tags: [Asia]
+    lat: 25.2048
+    lon: 55.2708
+
+  - provider: netnod-uni
+    site: DEL
+    service: anycast
+    city: New Delhi
+    country: India
+    country_iso: IN
+    tags: [Asia]
+    lat: 28.6139
+    lon: 77.2090
+
+  - provider: netnod-uni
+    site: DPS
+    service: anycast
+    city: Denpasar
+    country: Indonesia
+    country_iso: ID
+    tags: [Asia]
+    lat: -8.6500
+    lon: 115.2167
+
+  - provider: netnod-uni
+    site: EVN
+    service: anycast
+    city: Yerevan
+    country: Armenia
+    country_iso: AM
+    tags: [Asia]
+    lat: 40.1792
+    lon: 44.4991
+
+  - provider: netnod-uni
+    site: HKX
+    service: anycast
+    city: Hong Kong
+    country: Hong Kong
+    country_iso: HK
+    tags: [Asia]
+    lat: 22.3193
+    lon: 114.1694
+    notes: Hong Kong alternate node
+
+  - provider: netnod-uni
+    site: JAK
+    service: anycast
+    city: Jakarta
+    country: Indonesia
+    country_iso: ID
+    tags: [Asia]
+    lat: -6.2088
+    lon: 106.8456
+
+  - provider: netnod-uni
+    site: JPP
+    service: anycast
+    city: Tokyo
+    country: Japan
+    country_iso: JP
+    tags: [Asia]
+    lat: 35.6762
+    lon: 139.6503
+    notes: Tokyo alternate site
+
+  - provider: netnod-uni
+    site: KUL
+    service: anycast
+    city: Kuala Lumpur
+    country: Malaysia
+    country_iso: MY
+    tags: [Asia]
+    lat: 3.1390
+    lon: 101.6869
+
+  - provider: netnod-uni
+    site: MNL
+    service: anycast
+    city: Manila
+    country: Philippines
+    country_iso: PH
+    tags: [Asia]
+    lat: 14.5995
+    lon: 120.9842
+
+  - provider: netnod-uni
+    site: PNH
+    service: anycast
+    city: Phnom Penh
+    country: Cambodia
+    country_iso: KH
+    tags: [Asia]
+    lat: 11.5564
+    lon: 104.9282
+
+  - provider: netnod-uni
+    site: PWQ
+    service: anycast
+    city: Pavlodar
+    country: Kazakhstan
+    country_iso: KZ
+    tags: [Asia]
+    lat: 52.2873
+    lon: 76.9674
+
+  - provider: netnod-uni
+    site: RUH
+    service: anycast
+    city: Riyadh
+    country: Saudi Arabia
+    country_iso: SA
+    tags: [Asia]
+    lat: 24.7136
+    lon: 46.6753
+
+  - provider: netnod-uni
+    site: SIN
+    service: anycast
+    city: Singapore
+    country: Singapore
+    country_iso: SG
+    tags: [Asia]
+    lat: 1.3521
+    lon: 103.8198
+
+  - provider: netnod-uni
+    site: TAI
+    service: anycast
+    city: Taipei
+    country: Taiwan
+    country_iso: TW
+    tags: [Asia]
+    lat: 25.0330
+    lon: 121.5654
+
+  - provider: netnod-uni
+    site: THI
+    service: anycast
+    city: Thimphu
+    country: Bhutan
+    country_iso: BT
+    tags: [Asia]
+    lat: 27.4728
+    lon: 89.6390
+
+  - provider: netnod-uni
+    site: TOK
+    service: anycast
+    city: Tokyo
+    country: Japan
+    country_iso: JP
+    tags: [Asia]
+    lat: 35.6762
+    lon: 139.6503
+    notes: Tokyo metro
+
+  - provider: netnod-uni
+    site: ULA
+    service: anycast
+    city: Ulaanbaatar
+    country: Mongolia
+    country_iso: MN
+    tags: [Asia]
+    lat: 47.8864
+    lon: 106.9057
+
+  - provider: netnod-uni
+    site: YIA
+    service: anycast
+    city: Yogyakarta
+    country: Indonesia
+    country_iso: ID
+    tags: [Asia]
+    lat: -7.7956
+    lon: 110.3695
+
+  # --- Africa ---
+
+  - provider: netnod-uni
+    site: JBT
+    service: anycast
+    city: Johannesburg
+    country: South Africa
+    country_iso: ZA
+    tags: [Africa]
+    lat: -26.2041
+    lon: 28.0473
+    notes: Johannesburg alternate site
+
+  - provider: netnod-uni
+    site: JNB
+    service: anycast
+    city: Johannesburg
+    country: South Africa
+    country_iso: ZA
+    tags: [Africa]
+    lat: -26.2041
+    lon: 28.0473
+
+  - provider: netnod-uni
+    site: RBA
+    service: anycast
+    city: Rabat
+    country: Morocco
+    country_iso: MA
+    tags: [Africa]
+    lat: 34.0209
+    lon: -6.8416
+
+  # --- North America ---
+
+  - provider: netnod-uni
+    site: ASH
+    service: anycast
+    city: Ashburn
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 39.0438
+    lon: -77.4874
+    notes: Ashburn, Virginia (major IXP cluster)
+
+  - provider: netnod-uni
+    site: CHI
+    service: anycast
+    city: Chicago
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 41.8781
+    lon: -87.6298
+
+  - provider: netnod-uni
+    site: JAX
+    service: anycast
+    city: Jacksonville
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 30.3322
+    lon: -81.6557
+
+  - provider: netnod-uni
+    site: MCO
+    service: anycast
+    city: Orlando
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 28.5383
+    lon: -81.3792
+
+  - provider: netnod-uni
+    site: MEX
+    service: anycast
+    city: Mexico City
+    country: Mexico
+    country_iso: MX
+    tags: [North America]
+    lat: 19.4326
+    lon: -99.1332
+
+  - provider: netnod-uni
+    site: MIA
+    service: anycast
+    city: Miami
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 25.7617
+    lon: -80.1918
+
+  - provider: netnod-uni
+    site: PIX
+    service: anycast
+    city: Palo Alto
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 37.4419
+    lon: -122.1430
+    notes: PAIX / Palo Alto IX
+
+  - provider: netnod-uni
+    site: PTY
+    service: anycast
+    city: Panama City
+    country: Panama
+    country_iso: PA
+    tags: [North America]
+    lat: 8.9824
+    lon: -79.5199
+
+  - provider: netnod-uni
+    site: YUL
+    service: anycast
+    city: Montreal
+    country: Canada
+    country_iso: CA
+    tags: [North America]
+    lat: 45.5017
+    lon: -73.5673
+
+  - provider: netnod-uni
+    site: YVR
+    service: anycast
+    city: Vancouver
+    country: Canada
+    country_iso: CA
+    tags: [North America]
+    lat: 49.2827
+    lon: -123.1207
+
+  - provider: netnod-uni
+    site: YYZ
+    service: anycast
+    city: Toronto
+    country: Canada
+    country_iso: CA
+    tags: [North America]
+    lat: 43.6532
+    lon: -79.3832
+
+  # --- South America ---
+
+  - provider: netnod-uni
+    site: ASU
+    service: anycast
+    city: Asunción
+    country: Paraguay
+    country_iso: PY
+    tags: [South America]
+    lat: -25.2637
+    lon: -57.5759
+
+  - provider: netnod-uni
+    site: CBB
+    service: anycast
+    city: Cochabamba
+    country: Bolivia
+    country_iso: BO
+    tags: [South America]
+    lat: -17.3935
+    lon: -66.1570
+
+  - provider: netnod-uni
+    site: CCP
+    service: anycast
+    city: Concepción
+    country: Chile
+    country_iso: CL
+    tags: [South America]
+    lat: -36.8270
+    lon: -73.0498
+
+  - provider: netnod-uni
+    site: LIM
+    service: anycast
+    city: Lima
+    country: Peru
+    country_iso: PE
+    tags: [South America]
+    lat: -12.0464
+    lon: -77.0428
+
+  - provider: netnod-uni
+    site: MTV
+    service: anycast
+    city: Montevideo
+    country: Uruguay
+    country_iso: UY
+    tags: [South America]
+    lat: -34.9011
+    lon: -56.1645
+
+  - provider: netnod-uni
+    site: ORG
+    service: anycast
+    city: Paramaribo
+    country: Suriname
+    country_iso: SR
+    tags: [South America]
+    lat: 5.8110
+    lon: -55.1905
+    notes: Zorg en Hoop airport code
+
+  - provider: netnod-uni
+    site: POA
+    service: anycast
+    city: Porto Alegre
+    country: Brazil
+    country_iso: BR
+    tags: [South America]
+    lat: -30.0346
+    lon: -51.2177
+
+  - provider: netnod-uni
+    site: SAO
+    service: anycast
+    city: São Paulo
+    country: Brazil
+    country_iso: BR
+    tags: [South America]
+    lat: -23.5505
+    lon: -46.6333
+
+  # --- Oceania ---
+
+  - provider: netnod-uni
+    site: PRT
+    service: anycast
+    city: Perth
+    country: Australia
+    country_iso: AU
+    tags: [Oceania]
+    lat: -31.9505
+    lon: 115.8605
+
+  # --- Placeholders (location unknown; defaulted to Stockholm) ---
+  # Previously-mapped any sites awaiting real locations.
+
+  - provider: netnod-uni
+    site: FMT
+    service: anycast
+    city: Fremont
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 37.5485
+    lon: -121.9886
+
+  - provider: netnod-uni
+    site: MNP
+    service: anycast
+    city: Minneapolis
+    country: United States
+    country_iso: US
+    tags: [North America]
+    lat: 44.9778
+    lon: -93.265
+
+  - provider: netnod-uni
+    site: TRT
+    service: anycast
+    city: Princes Town
+    country: Trinidad and Tobago
+    country_iso: TT
+    tags: [North America]
+    lat: 10.2714
+    lon: -61.3778
+
+  - provider: netnod-uni
+    site: VGA
+    service: anycast
+    city: Amaravati
+    country: India
+    country_iso: IN
+    tags: [Asia]
+    lat: 16.5149
+    lon: 80.5183
+
+  - provider: netnod-uni
+    site: MAR
+    service: anycast
+    city: Maracaibo
+    country: Venezuela
+    country_iso: VE
+    tags: [South America]
+    lat: 10.6427
+    lon: -71.6125
+    notes: Zulia state (previously "mar")
+
+  # New codes first observed via the netnod-uni (v2) API.
+  # All defaulted to service=anycast per user; flag any that should be
+  # unicast when the real location is supplied.
+
+  - provider: netnod-uni
+    site: ACC
+    service: anycast
+    city: Accra
+    country: Ghana
+    country_iso: GH
+    tags: [Africa]
+    lat: 5.6037
+    lon: -0.187
+
+  - provider: netnod-uni
+    site: EZE
+    service: anycast
+    city: Buenos Aires
+    country: Argentina
+    country_iso: AR
+    tags: [South America]
+    lat: -34.6037
+    lon: -58.3816
+
+  - provider: netnod-uni
+    site: GAI
+    service: anycast
+    city: Gais
+    country: Switzerland
+    country_iso: CH
+    tags: [Europe]
+    lat: 47.3617
+    lon: 9.4542
+
+  - provider: netnod-uni
+    site: GBG
+    service: unicast
+    city: Gothenburg
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 57.7089
+    lon: 11.9746
+
+  - provider: netnod-uni
+    site: GBU
+    service: unicast
+    city: Gothenburg
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 57.7089
+    lon: 11.9746
+
+  - provider: netnod-uni
+    site: GUA
+    service: anycast
+    city: Guatemala City
+    country: Guatemala
+    country_iso: GT
+    tags: [North America]
+    lat: 14.6349
+    lon: -90.5069
+
+  - provider: netnod-uni
+    site: GYE
+    service: anycast
+    city: Guayaquil
+    country: Ecuador
+    country_iso: EC
+    tags: [South America]
+    lat: -2.1894
+    lon: -79.8891
+
+  - provider: netnod-uni
+    site: LLA
+    service: unicast
+    city: Luleå
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 65.5848
+    lon: 22.1547
+
+  - provider: netnod-uni
+    site: LLB
+    service: unicast
+    city: Luleå
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 65.5848
+    lon: 22.1547
+
+  - provider: netnod-uni
+    site: LON
+    service: anycast
+    city: London
+    country: United Kingdom
+    country_iso: GB
+    tags: [Europe]
+    lat: 51.5074
+    lon: -0.1278
+
+  - provider: netnod-uni
+    site: MLN
+    service: anycast
+    city: Manila
+    country: Philippines
+    country_iso: PH
+    tags: [Asia]
+    lat: 14.5995
+    lon: 120.9842
+
+  - provider: netnod-uni
+    site: MMA
+    service: unicast
+    city: Malmö
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 55.605
+    lon: 13.0038
+
+  - provider: netnod-uni
+    site: MMX
+    service: unicast
+    city: Malmö
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 55.605
+    lon: 13.0038
+
+  - provider: netnod-uni
+    site: MTY
+    service: anycast
+    city: Monterrey
+    country: Mexico
+    country_iso: MX
+    tags: [North America]
+    lat: 25.6866
+    lon: -100.3161
+
+  - provider: netnod-uni
+    site: QTR
+    service: anycast
+    city: Doha
+    country: Qatar
+    country_iso: QA
+    tags: [Asia]
+    lat: 25.2854
+    lon: 51.531
+
+  - provider: netnod-uni
+    site: RIG
+    service: anycast
+    city: Riga
+    country: Latvia
+    country_iso: LV
+    tags: [Europe]
+    lat: 56.9496
+    lon: 24.1052
+
+  - provider: netnod-uni
+    site: STU
+    service: unicast
+    city: Stockholm
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 59.3293
+    lon: 18.0686
+
+  - provider: netnod-uni
+    site: SUB
+    service: unicast
+    city: Stockholm
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 59.3293
+    lon: 18.0686
+
+  - provider: netnod-uni
+    site: SVA
+    service: unicast
+    city: Sundsvall
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 62.3908
+    lon: 17.3069
+
+  - provider: netnod-uni
+    site: SVL
+    service: unicast
+    city: Sundsvall
+    country: Sweden
+    country_iso: SE
+    tags: [Europe, Nordics]
+    lat: 62.3908
+    lon: 17.3069
+
+  - provider: netnod-uni
+    site: UKX
+    service: anycast
+    city: Kyiv
+    country: Ukraine
+    country_iso: UA
+    tags: [Europe]
+    lat: 50.4501
+    lon: 30.5234
+
+  - provider: netnod-uni
+    site: YYC
+    service: anycast
+    city: Calgary
+    country: Canada
+    country_iso: CA
+    tags: [North America]
+    lat: 51.0447
+    lon: -114.0719
+

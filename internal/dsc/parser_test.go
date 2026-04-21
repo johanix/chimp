@@ -1,4 +1,4 @@
-package main
+package dsc
 
 import (
 	"testing"
@@ -72,24 +72,25 @@ var sampleDSC = []byte(`[
 }
 ]`)
 
-func TestParseDSCJSON(t *testing.T) {
-	obs, err := ParseDSCJSON(sampleDSC, "testhost")
+func TestParseJSON(t *testing.T) {
+	obs, err := ParseJSON(sampleDSC, "test-provider", "test-site", "testhost")
 	if err != nil {
-		t.Fatalf("ParseDSCJSON failed: %v", err)
+		t.Fatalf("ParseJSON failed: %v", err)
 	}
 
 	// pcap_stats has empty data, so 0 observations from that.
-	// client_subnet: 2 entries
-	// opcode: 1 entry
-	// rcode: 1 entry
-	// qtype: 1 entry
-	// Total: 5
+	// client_subnet: 2 entries, opcode: 1, rcode: 1, qtype: 1 → 5 total.
 	if len(obs) != 5 {
 		t.Fatalf("expected 5 observations, got %d", len(obs))
 	}
 
-	// Verify all have correct hostname and timestamp
 	for _, o := range obs {
+		if o.Provider != "test-provider" {
+			t.Errorf("expected provider test-provider, got %s", o.Provider)
+		}
+		if o.Site != "test-site" {
+			t.Errorf("expected site test-site, got %s", o.Site)
+		}
 		if o.Hostname != "testhost" {
 			t.Errorf("expected hostname testhost, got %s", o.Hostname)
 		}
@@ -98,7 +99,6 @@ func TestParseDSCJSON(t *testing.T) {
 		}
 	}
 
-	// Check we got the expected datasets
 	datasets := map[string]int{}
 	for _, o := range obs {
 		datasets[o.Dataset]++
@@ -110,7 +110,6 @@ func TestParseDSCJSON(t *testing.T) {
 		t.Errorf("expected 1 qtype obs, got %d", datasets["qtype"])
 	}
 
-	// Check a specific observation
 	for _, o := range obs {
 		if o.Dataset == "client_subnet" && o.Key2 == "194.103.53.0" {
 			if o.Key1 != "ALL" {

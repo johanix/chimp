@@ -1,4 +1,5 @@
-package main
+// Package dsc provides DSC data types and parsers.
+package dsc
 
 import (
 	"encoding/json"
@@ -9,6 +10,8 @@ import (
 // Observation is a single row destined for the observations table.
 type Observation struct {
 	Timestamp time.Time
+	Provider  string
+	Site      string
 	Hostname  string
 	Dataset   string
 	Key1      string
@@ -16,9 +19,9 @@ type Observation struct {
 	Value     uint64
 }
 
-// DSCDataset represents a single dataset in the DSC JSON output.
+// Dataset represents a single dataset in the DSC JSON output.
 // The file is a JSON array of these.
-type DSCDataset struct {
+type Dataset struct {
 	Name       string          `json:"name"`
 	StartTime  int64           `json:"start_time"`
 	StopTime   int64           `json:"stop_time"`
@@ -26,13 +29,13 @@ type DSCDataset struct {
 	Data       json.RawMessage `json:"data"`
 }
 
-// DSCCountPair is a {val, count} entry in the inner dimension.
-type DSCCountPair struct {
+// CountPair is a {val, count} entry in the inner dimension.
+type CountPair struct {
 	Val   string `json:"val"`
 	Count uint64 `json:"count"`
 }
 
-// ParseDSCJSON parses a DSC JSON file into observations.
+// ParseJSON parses a DSC JSON file into observations.
 //
 // DSC JSON is an array of datasets:
 //
@@ -43,22 +46,19 @@ type DSCCountPair struct {
 //	    "stop_time": 1774377900,
 //	    "dimensions": ["All", "Qtype"],
 //	    "data": [
-//	      {
-//	        "All": "ALL",
-//	        "Qtype": [{"val": "6", "count": 118}]
-//	      }
+//	      {"All": "ALL", "Qtype": [{"val": "6", "count": 118}]}
 //	    ]
 //	  }
 //	]
-func ParseDSCJSON(data []byte, hostname string) ([]Observation, error) {
-	var datasets []DSCDataset
+func ParseJSON(data []byte, provider, site, hostname string) ([]Observation, error) {
+	var datasets []Dataset
 	if err := json.Unmarshal(data, &datasets); err != nil {
 		return nil, fmt.Errorf("unmarshaling DSC JSON: %w", err)
 	}
 
 	var obs []Observation
 	for _, ds := range datasets {
-		parsed, err := parseDataset(ds, hostname)
+		parsed, err := parseDataset(ds, provider, site, hostname)
 		if err != nil {
 			return nil, fmt.Errorf("parsing dataset %s: %w", ds.Name, err)
 		}
@@ -67,22 +67,7 @@ func ParseDSCJSON(data []byte, hostname string) ([]Observation, error) {
 	return obs, nil
 }
 
-// parseDataset handles a single DSC dataset.
-//
-// Each data entry is a JSON object whose keys match the dimension names.
-// The first dimension is typically a grouping key (string value),
-// and the last dimension is an array of {val, count} pairs.
-//
-// For 2D datasets like:
-//
-//	{"All": "ALL", "Qtype": [{"val": "6", "count": 118}]}
-//
-// key1 = the first dimension's value ("ALL")
-// key2 = the val from the count pairs ("6")
-//
-// For datasets with empty data arrays (like pcap_stats), we
-// produce no observations.
-func parseDataset(ds DSCDataset, hostname string) ([]Observation, error) {
+func parseDataset(ds Dataset, provider, site, hostname string) ([]Observation, error) {
 	ts := time.Unix(ds.StartTime, 0).UTC()
 
 	if len(ds.Dimensions) < 1 {
@@ -103,7 +88,7 @@ func parseDataset(ds DSCDataset, hostname string) ([]Observation, error) {
 	if len(ds.Dimensions) == 2 {
 		dim2Name := ds.Dimensions[1]
 		for _, entry := range entries {
-			parsed, err := parse2DEntry(entry, dim1Name, dim2Name, ts, hostname, ds.Name)
+			parsed, err := parse2DEntry(entry, dim1Name, dim2Name, ts, provider, site, hostname, ds.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -111,7 +96,7 @@ func parseDataset(ds DSCDataset, hostname string) ([]Observation, error) {
 		}
 	} else if len(ds.Dimensions) == 1 {
 		for _, entry := range entries {
-			parsed, err := parse1DEntry(entry, dim1Name, ts, hostname, ds.Name)
+			parsed, err := parse1DEntry(entry, dim1Name, ts, provider, site, hostname, ds.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -125,16 +110,12 @@ func parseDataset(ds DSCDataset, hostname string) ([]Observation, error) {
 	return obs, nil
 }
 
-// parse2DEntry parses an entry like:
-//
-//	{"All": "ALL", "Qtype": [{"val": "6", "count": 118}]}
-func parse2DEntry(entry json.RawMessage, dim1Name, dim2Name string, ts time.Time, hostname, dataset string) ([]Observation, error) {
+func parse2DEntry(entry json.RawMessage, dim1Name, dim2Name string, ts time.Time, provider, site, hostname, dataset string) ([]Observation, error) {
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(entry, &raw); err != nil {
 		return nil, fmt.Errorf("parsing data entry: %w", err)
 	}
 
-	// First dimension: string value
 	var key1 string
 	if v, ok := raw[dim1Name]; ok {
 		if err := json.Unmarshal(v, &key1); err != nil {
@@ -142,8 +123,7 @@ func parse2DEntry(entry json.RawMessage, dim1Name, dim2Name string, ts time.Time
 		}
 	}
 
-	// Second dimension: array of {val, count}
-	var pairs []DSCCountPair
+	var pairs []CountPair
 	if v, ok := raw[dim2Name]; ok {
 		if err := json.Unmarshal(v, &pairs); err != nil {
 			return nil, fmt.Errorf("parsing dimension %s: %w", dim2Name, err)
@@ -154,6 +134,8 @@ func parse2DEntry(entry json.RawMessage, dim1Name, dim2Name string, ts time.Time
 	for _, p := range pairs {
 		obs = append(obs, Observation{
 			Timestamp: ts,
+			Provider:  provider,
+			Site:      site,
 			Hostname:  hostname,
 			Dataset:   dataset,
 			Key1:      key1,
@@ -164,14 +146,13 @@ func parse2DEntry(entry json.RawMessage, dim1Name, dim2Name string, ts time.Time
 	return obs, nil
 }
 
-// parse1DEntry parses a 1D entry with a single dimension of {val, count} pairs.
-func parse1DEntry(entry json.RawMessage, dimName string, ts time.Time, hostname, dataset string) ([]Observation, error) {
+func parse1DEntry(entry json.RawMessage, dimName string, ts time.Time, provider, site, hostname, dataset string) ([]Observation, error) {
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(entry, &raw); err != nil {
 		return nil, fmt.Errorf("parsing data entry: %w", err)
 	}
 
-	var pairs []DSCCountPair
+	var pairs []CountPair
 	if v, ok := raw[dimName]; ok {
 		if err := json.Unmarshal(v, &pairs); err != nil {
 			return nil, fmt.Errorf("parsing dimension %s: %w", dimName, err)
@@ -182,6 +163,8 @@ func parse1DEntry(entry json.RawMessage, dimName string, ts time.Time, hostname,
 	for _, p := range pairs {
 		obs = append(obs, Observation{
 			Timestamp: ts,
+			Provider:  provider,
+			Site:      site,
 			Hostname:  hostname,
 			Dataset:   dataset,
 			Key1:      p.Val,

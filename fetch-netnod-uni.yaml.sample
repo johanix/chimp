@@ -1,0 +1,27 @@
+netnod:
+   base_url: "https://ndsapi.netnod.se/preview/dsc/v2"
+   token: "PUT-YOUR-TOKEN-HERE"
+   # sites: ["STO", "AMS"]   # optional; empty = use /sites/available per minute
+
+provider: "netnod-uni"
+
+# Required. Which sinks to write every fetched blob to. No defaults.
+# Valid values: "s3", "local". Listing both mirrors writes to both.
+# The named sink's config section below must be populated.
+output: [s3]
+# output: [local]
+# output: [s3, local]
+
+s3:
+   bucket: "s3-dns-anycast"
+   prefix: ""
+   region: "eu-north-1"
+   # profile: "default"
+   # endpoint: ""
+
+local:
+   path: "/var/tmp/dsc-netnod-uni"
+
+poll_interval: 60     # seconds between cycles
+lag_minutes: 2        # how far behind wall-clock to fetch (lets data settle)
+catchup_minutes: 5    # how many recent minutes to re-scan each cycle
