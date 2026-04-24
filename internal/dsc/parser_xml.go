@@ -108,6 +108,18 @@ func ParseXML(data []byte, provider, site, hostname string) ([]Observation, erro
 func parseXMLArray(arr xmlArray, provider, site, hostname string) ([]Observation, error) {
 	ts := time.Unix(arr.StartTime, 0).UTC()
 
+	// Pick out the dimension types so we can labelize well-known numeric
+	// codes (Qtype/Rcode/Opcode/IPProto) at parse time.
+	var dim1Type, dim2Type string
+	for _, d := range arr.DimDecls {
+		switch d.Number {
+		case 1:
+			dim1Type = d.Type
+		case 2:
+			dim2Type = d.Type
+		}
+	}
+
 	// Re-parse <data>'s inner XML as a stream of outer elements. Using
 	// innerxml + a fresh decoder keeps us agnostic to the outer element's
 	// tag name (which varies by array per its `type` attribute).
@@ -139,8 +151,8 @@ func parseXMLArray(arr xmlArray, provider, site, hostname string) ([]Observation
 					Site:      site,
 					Hostname:  hostname,
 					Dataset:   arr.Name,
-					Key1:      outer.Val,
-					Key2:      inner.Val,
+					Key1:      Labelize(dim1Type, outer.Val),
+					Key2:      Labelize(dim2Type, inner.Val),
 					Value:     inner.Count,
 				})
 			}
@@ -171,7 +183,7 @@ func parseXMLArray(arr xmlArray, provider, site, hostname string) ([]Observation
 				Site:      site,
 				Hostname:  hostname,
 				Dataset:   arr.Name,
-				Key1:      leaf.Val,
+				Key1:      Labelize(dim1Type, leaf.Val),
 				Key2:      "",
 				Value:     leaf.Count,
 			})

@@ -65,7 +65,7 @@
             "steps": [
               {
                 "color": "super-light-green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -175,7 +175,7 @@
           "editorType": "sql",
           "format": 1,
           "queryType": "table",
-          "rawSql": "SELECT\n  coalesce(s.city, 'Unknown') AS city,\n  coalesce(s.country, 'Unknown') AS country,\n  coalesce(s.country_iso, '??') AS country_iso,\n  any(s.lat) AS lat,\n  any(s.lon) AS lon,\n  sum(o.value) AS queries\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\n  AND s.lat != 0\nGROUP BY city, country, country_iso\nORDER BY queries DESC",
+          "rawSql": "SELECT\n  coalesce(s.city, 'Unknown') AS city,\n  coalesce(s.country, 'Unknown') AS country,\n  coalesce(s.country_iso, '??') AS country_iso,\n  any(s.lat) AS lat,\n  any(s.lon) AS lon,\n  sum(o.value) AS queries\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\n  AND s.lat != 0\nGROUP BY city, country, country_iso\nORDER BY queries DESC",
           "refId": "A"
         }
       ],
@@ -281,7 +281,7 @@
           "editorType": "sql",
           "format": 0,
           "queryType": "timeseries",
-          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  coalesce(s.country, 'Unknown') AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  coalesce(s.country, 'Unknown') AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
           "refId": "A"
         }
       ],
@@ -384,11 +384,217 @@
           "editorType": "sql",
           "format": 0,
           "queryType": "timeseries",
-          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    o.key2 = '1', 'A',\n    o.key2 = '2', 'NS',\n    o.key2 = '5', 'CNAME',\n    o.key2 = '6', 'SOA',\n    o.key2 = '12', 'PTR',\n    o.key2 = '15', 'MX',\n    o.key2 = '16', 'TXT',\n    o.key2 = '28', 'AAAA',\n    o.key2 = '33', 'SRV',\n    o.key2 = '43', 'DS',\n    o.key2 = '46', 'RRSIG',\n    o.key2 = '47', 'NSEC',\n    o.key2 = '48', 'DNSKEY',\n    o.key2 = '50', 'NSEC3',\n    o.key2 = '52', 'TLSA',\n    o.key2 = '59', 'CDS',\n    o.key2 = '60', 'CDNSKEY',\n    o.key2 = '62', 'CSYNC',\n    o.key2 = '64', 'SVCB',\n    o.key2 = '65', 'HTTPS',\n    o.key2 = '255', 'ANY',\n    o.key2 = '257', 'CAA',\n    concat('TYPE', o.key2)\n  ) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    o.key2 = '1', 'A',\n    o.key2 = '2', 'NS',\n    o.key2 = '5', 'CNAME',\n    o.key2 = '6', 'SOA',\n    o.key2 = '12', 'PTR',\n    o.key2 = '15', 'MX',\n    o.key2 = '16', 'TXT',\n    o.key2 = '28', 'AAAA',\n    o.key2 = '33', 'SRV',\n    o.key2 = '43', 'DS',\n    o.key2 = '46', 'RRSIG',\n    o.key2 = '47', 'NSEC',\n    o.key2 = '48', 'DNSKEY',\n    o.key2 = '50', 'NSEC3',\n    o.key2 = '52', 'TLSA',\n    o.key2 = '59', 'CDS',\n    o.key2 = '60', 'CDNSKEY',\n    o.key2 = '62', 'CSYNC',\n    o.key2 = '64', 'SVCB',\n    o.key2 = '65', 'HTTPS',\n    o.key2 = '255', 'ANY',\n    o.key2 = '257', 'CAA',\n    concat('TYPE', o.key2)\n  ) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
           "refId": "A"
         }
       ],
       "title": "QPS by qtype",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "description": "Stacked per-transport QPS for the selected region. Source dataset: transport_vs_qtype (key1 = udp|tcp).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 23
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  upper(o.key1) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'transport_vs_qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.key1 IN ($transport)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by transport (UDP/TCP)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "description": "Stacked per-IP-version QPS for the selected region. Source dataset: dns_ip_version_vs_qtype (key1 = IPv4|IPv6).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 8,
+        "y": 23
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  o.key1 AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'dns_ip_version_vs_qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.key1 IN ($ipversion)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by IP version (IPv4/IPv6)",
       "type": "timeseries"
     },
     {
@@ -452,37 +658,12 @@
           },
           "unit": "qps"
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "qps RCODE23"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": true,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 10,
-        "w": 11,
-        "x": 13,
+        "w": 8,
+        "x": 16,
         "y": 23
       },
       "id": 4,
@@ -512,7 +693,7 @@
           "editorType": "sql",
           "format": 0,
           "queryType": "timeseries",
-          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    o.key2 = '0', 'NOERROR',\n    o.key2 = '1', 'FORMERR',\n    o.key2 = '2', 'SERVFAIL',\n    o.key2 = '3', 'NXDOMAIN',\n    o.key2 = '4', 'NOTIMP',\n    o.key2 = '5', 'REFUSED',\n    o.key2 = '7', 'YXRRSET',\n    o.key2 = '9', 'NOTAUTH',\n    concat('RCODE', o.key2)\n  ) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'rcode'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    o.key2 = '0', 'NOERROR',\n    o.key2 = '1', 'FORMERR',\n    o.key2 = '2', 'SERVFAIL',\n    o.key2 = '3', 'NXDOMAIN',\n    o.key2 = '4', 'NOTIMP',\n    o.key2 = '5', 'REFUSED',\n    o.key2 = '7', 'YXRRSET',\n    o.key2 = '9', 'NOTAUTH',\n    concat('RCODE', o.key2)\n  ) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'rcode'\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
           "refId": "A"
         }
       ],
@@ -520,133 +701,225 @@
       "type": "timeseries"
     },
     {
-      "id": 5,
-      "title": "QPS by transport (UDP/TCP)",
-      "description": "Stacked per-transport QPS for the selected region. Source dataset: transport_vs_qtype (key1 = udp|tcp).",
-      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "description": "Total queries per second aggregated by site service type. Anycast and unicast lines overlaid.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
       "gridPos": {
         "h": 10,
-        "w": 8,
+        "w": 15,
         "x": 0,
         "y": 33
       },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "${DS_CLICKHOUSE}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "qps",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 20,
-            "stacking": {
-              "mode": "normal",
-              "group": "A"
-            }
-          }
-        },
-        "overrides": []
-      },
+      "id": 8,
       "options": {
         "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
           "calcs": [
             "mean",
-            "max"
-          ]
+            "max",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.2.0",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "${DS_CLICKHOUSE}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  upper(o.key1) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'transport_vs_qtype'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
           "format": 0,
-          "queryType": "timeseries"
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  s.service AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nINNER JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
         }
-      ]
+      ],
+      "title": "QPS by service (anycast vs unicast)",
+      "type": "timeseries"
     },
     {
-      "id": 6,
-      "title": "QPS by IP version (IPv4/IPv6)",
-      "description": "Stacked per-IP-version QPS for the selected region. Source dataset: dns_ip_version_vs_qtype (key1 = IPv4|IPv6).",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 8,
-        "y": 33
-      },
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${DS_CLICKHOUSE}"
       },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "qps",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 20,
-            "stacking": {
-              "mode": "normal",
-              "group": "A"
-            }
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "calcs": [
-            "mean",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "${DS_CLICKHOUSE}"
-          },
-          "editorType": "sql",
-          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  o.key1 AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'dns_ip_version_vs_qtype'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
-          "format": 0,
-          "queryType": "timeseries"
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "title": "DO-bit set (% of queries)",
       "description": "Percentage of queries with the DNSSEC OK (DO) bit set. Source dataset: do_bit (key2 = set|clear).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 9,
+        "x": 15,
+        "y": 33
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  'DO set' AS series,\n  100.0 * sumIf(o.value, o.key2 = 'set') / nullIf(sum(o.value), 0) AS pct\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'do_bit'\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time\nORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "DO-bit set (% of queries)",
+      "type": "timeseries"
+    },
+    {
+      "id": 9,
+      "title": "QPS by location \u2014 total + per site",
+      "description": "Total QPS and per-site breakdown. Source dataset: qtype.",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
-        "w": 8,
-        "x": 16,
-        "y": 33
+        "w": 24,
+        "x": 0,
+        "y": 43
       },
       "datasource": {
         "type": "grafana-clickhouse-datasource",
@@ -654,16 +927,34 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
+          "unit": "qps",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TOTAL"
+            },
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -689,7 +980,18 @@
             "uid": "${DS_CLICKHOUSE}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  'DO set' AS series,\n  100.0 * sumIf(o.value, o.key2 = 'set') / nullIf(sum(o.value), 0) AS pct\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'do_bit'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time\nORDER BY time",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  'TOTAL' AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time\nORDER BY time",
+          "format": 0,
+          "queryType": "timeseries"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  o.site AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
           "format": 0,
           "queryType": "timeseries"
         }
@@ -707,47 +1009,107 @@
   "templating": {
     "list": [
       {
+        "name": "region",
+        "label": "Region",
+        "type": "custom",
+        "query": "world, europe, nordics, sweden",
+        "multi": false,
+        "includeAll": false,
         "current": {
+          "selected": true,
           "text": "world",
           "value": "world"
+        }
+      },
+      {
+        "name": "site",
+        "label": "Site",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
         },
-        "includeAll": false,
-        "label": "Region",
-        "name": "region",
-        "options": [
-          {
-            "selected": true,
-            "text": "world",
-            "value": "world"
-          },
-          {
-            "selected": false,
-            "text": "europe",
-            "value": "europe"
-          },
-          {
-            "selected": false,
-            "text": "nordics",
-            "value": "nordics"
-          },
-          {
-            "selected": false,
-            "text": "sweden",
-            "value": "sweden"
-          }
-        ],
-        "query": "world, europe, nordics, sweden",
-        "type": "custom"
+        "query": "SELECT DISTINCT site FROM dsc.observations ORDER BY site",
+        "multi": true,
+        "includeAll": true,
+        "refresh": 1,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "qtype",
+        "label": "Qtype",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
+        },
+        "query": "SELECT DISTINCT multiIf(key2='1','A',key2='2','NS',key2='5','CNAME',key2='6','SOA',key2='12','PTR',key2='15','MX',key2='16','TXT',key2='28','AAAA',key2='33','SRV',key2='43','DS',key2='46','RRSIG',key2='47','NSEC',key2='48','DNSKEY',key2='50','NSEC3',key2='52','TLSA',key2='59','CDS',key2='60','CDNSKEY',key2='62','CSYNC',key2='64','SVCB',key2='65','HTTPS',key2='255','ANY',key2='257','CAA',concat('TYPE',key2)) AS qtype FROM dsc.observations WHERE dataset='qtype' ORDER BY qtype",
+        "multi": true,
+        "includeAll": true,
+        "refresh": 1,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "rcode",
+        "label": "Rcode",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_CLICKHOUSE}"
+        },
+        "query": "SELECT DISTINCT multiIf(key2='0','NOERROR',key2='1','FORMERR',key2='2','SERVFAIL',key2='3','NXDOMAIN',key2='4','NOTIMP',key2='5','REFUSED',key2='7','YXRRSET',key2='9','NOTAUTH',concat('RCODE',key2)) AS rcode FROM dsc.observations WHERE dataset='rcode' ORDER BY rcode",
+        "multi": true,
+        "includeAll": true,
+        "refresh": 1,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "ipversion",
+        "label": "IP version",
+        "type": "custom",
+        "query": "IPv4, IPv6",
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "transport",
+        "label": "Transport",
+        "type": "custom",
+        "query": "udp, tcp",
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
       }
     ]
   },
   "time": {
-    "from": "2026-04-18T04:49:30.957Z",
-    "to": "2026-04-18T13:00:16.038Z"
+    "from": "now-2d",
+    "to": "now"
   },
   "timepicker": {},
   "timezone": "",
-  "title": "DSC Playground \u2014 Regional Aggregates",
-  "uid": "dsc-playground-v1",
-  "version": 2
+  "title": "DSC Playground \u2014 Cross-Filter Experiment",
+  "uid": "dsc-playground-v2",
+  "version": 4
 }

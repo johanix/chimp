@@ -51,37 +51,65 @@ func TestParseXML_SampleFile(t *testing.T) {
 		t.Errorf("opcode: expected 1 obs, got %d", datasets["opcode"])
 	}
 
-	// Spot-check a known (key1, key2, value) triple.
+	// Spot-check a known (key1, key2, value) triple. Opcode 0 labelizes to QUERY.
 	var found bool
 	for _, o := range obs {
-		if o.Dataset == "opcode" && o.Key1 == "ALL" && o.Key2 == "0" {
+		if o.Dataset == "opcode" && o.Key1 == "ALL" && o.Key2 == "QUERY" {
 			if o.Value != 11456 {
-				t.Errorf("opcode ALL/0: expected value 11456, got %d", o.Value)
+				t.Errorf("opcode ALL/QUERY: expected value 11456, got %d", o.Value)
 			}
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("did not find opcode ALL/0 observation")
+		t.Error("did not find opcode ALL/QUERY observation")
 	}
 
 	// client_addr_vs_rcode has a real 2D cross-tab: multiple outer Rcode values.
-	var rcode0Count, rcode3Count int
+	// Labelize converts 0→NOERROR, 3→NXDOMAIN.
+	var noerrorCount, nxdomainCount int
 	for _, o := range obs {
 		if o.Dataset != "client_addr_vs_rcode" {
 			continue
 		}
 		switch o.Key1 {
-		case "0":
-			rcode0Count++
-		case "3":
-			rcode3Count++
+		case "NOERROR":
+			noerrorCount++
+		case "NXDOMAIN":
+			nxdomainCount++
 		}
 	}
-	if rcode0Count == 0 || rcode3Count == 0 {
-		t.Errorf("client_addr_vs_rcode: expected entries for Rcode=0 and Rcode=3, got %d and %d",
-			rcode0Count, rcode3Count)
+	if noerrorCount == 0 || nxdomainCount == 0 {
+		t.Errorf("client_addr_vs_rcode: expected entries for NOERROR and NXDOMAIN, got %d and %d",
+			noerrorCount, nxdomainCount)
+	}
+}
+
+func TestLabelize(t *testing.T) {
+	cases := []struct {
+		dimType, in, want string
+	}{
+		{"Qtype", "1", "A"},
+		{"Qtype", "28", "AAAA"},
+		{"Qtype", "99999", "TYPE99999"},
+		{"Rcode", "0", "NOERROR"},
+		{"Rcode", "3", "NXDOMAIN"},
+		{"Rcode", "42", "RCODE42"},
+		{"Opcode", "0", "QUERY"},
+		{"Opcode", "5", "UPDATE"},
+		{"IPProto", "17", "UDP"},
+		{"IPProto", "6", "TCP"},
+		{"IPProto", "udp", "UDP"},
+		{"IPProto", "tcp", "TCP"},
+		{"All", "ALL", "ALL"},
+		{"TLD", "se.", "se."},
+		{"", "foo", "foo"},
+	}
+	for _, c := range cases {
+		if got := Labelize(c.dimType, c.in); got != c.want {
+			t.Errorf("Labelize(%q, %q) = %q; want %q", c.dimType, c.in, got, c.want)
+		}
 	}
 }
 
@@ -107,7 +135,7 @@ func TestParseXML_CapitalRootElement(t *testing.T) {
 		t.Fatalf("expected 1 observation, got %d", len(obs))
 	}
 	o := obs[0]
-	if o.Dataset != "opcode" || o.Key1 != "ALL" || o.Key2 != "0" || o.Value != 42 {
+	if o.Dataset != "opcode" || o.Key1 != "ALL" || o.Key2 != "QUERY" || o.Value != 42 {
 		t.Errorf("unexpected observation: %+v", o)
 	}
 }

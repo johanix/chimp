@@ -138,8 +138,8 @@ func parse2DEntry(entry json.RawMessage, dim1Name, dim2Name string, ts time.Time
 			Site:      site,
 			Hostname:  hostname,
 			Dataset:   dataset,
-			Key1:      key1,
-			Key2:      p.Val,
+			Key1:      Labelize(dim1Name, key1),
+			Key2:      Labelize(dim2Name, p.Val),
 			Value:     p.Count,
 		})
 	}
@@ -167,7 +167,7 @@ func parse1DEntry(entry json.RawMessage, dimName string, ts time.Time, provider,
 			Site:      site,
 			Hostname:  hostname,
 			Dataset:   dataset,
-			Key1:      p.Val,
+			Key1:      Labelize(dimName, p.Val),
 			Key2:      "",
 			Value:     p.Count,
 		})

@@ -909,6 +909,93 @@
       ],
       "title": "DO-bit set (% of queries)",
       "type": "timeseries"
+    },
+    {
+      "id": 9,
+      "title": "QPS by location \u2014 total + per site",
+      "description": "Total QPS and per-site breakdown. Source dataset: qtype.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 43
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_CLICKHOUSE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "qps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TOTAL"
+            },
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  'TOTAL' AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time\nORDER BY time",
+          "format": 0,
+          "queryType": "timeseries"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${DS_CLICKHOUSE}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  o.site AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "format": 0,
+          "queryType": "timeseries"
+        }
+      ]
     }
   ],
   "preload": false,
