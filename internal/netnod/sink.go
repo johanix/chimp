@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/s3io"
+	"github.com/johanix/chimp/internal/s3io"
 )
 
 // Sink accepts DSC files under a relative Hive-style key. The sink decides

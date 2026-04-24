@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/s3io"
+	"github.com/johanix/chimp/internal/s3io"
 )
 
 type NetnodConfig struct {

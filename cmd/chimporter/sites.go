@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/chdb"
+	"github.com/johanix/chimp/internal/chdb"
 )
 
 // siteEntry mirrors one entry under `sites:` in sites.yaml.

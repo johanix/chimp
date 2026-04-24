@@ -1,0 +1,21 @@
+.vagrant
+
+# Compiled binaries (built by chimporter/Makefile).
+chimporter
+fetch-netnod-any
+fetch-netnod-uni
+
+# Local tokenized configs — tokens must not land in git.
+# Commit *.sample variants instead.
+fetch-netnod-any.yaml
+fetch-netnod-uni.yaml
+chimporter.yaml
+
+# Editor/backup artifacts.
+*~
+*.bak
+*.swp
+
+# Ad-hoc scratch files.
+dsc.xml
+dashboards/johani-tweaks.json

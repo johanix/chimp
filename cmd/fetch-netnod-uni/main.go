@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/netnod"
+	"github.com/johanix/chimp/internal/netnod"
 )
 
 func main() {

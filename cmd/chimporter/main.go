@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/chdb"
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/dsc"
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/s3io"
+	"github.com/johanix/chimp/internal/chdb"
+	"github.com/johanix/chimp/internal/dsc"
+	"github.com/johanix/chimp/internal/s3io"
 )
 
 var configPath string

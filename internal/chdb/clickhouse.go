@@ -10,7 +10,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/dsc"
+	"github.com/johanix/chimp/internal/dsc"
 )
 
 type Config struct {

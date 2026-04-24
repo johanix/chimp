@@ -1,4 +1,4 @@
-module github.com/johanix/dns-anycast-testbed/chimporter
+module github.com/johanix/chimp
 
 go 1.25.5
 

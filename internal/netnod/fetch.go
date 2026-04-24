@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/johanix/dns-anycast-testbed/chimporter/internal/s3io"
+	"github.com/johanix/chimp/internal/s3io"
 )
 
 // FetchMinute fetches DSC for every site with data at minute t and writes
