@@ -1,0 +1,26 @@
+#!/bin/sh
+# Reject commits containing any staged file larger than MAX_BYTES.
+# Activate per clone with: git config core.hooksPath .githooks
+
+MAX_BYTES=5242880   # 5 MiB
+
+fail=0
+# List staged files (added/copied/modified), NUL-separated for safety.
+git diff --cached --name-only --diff-filter=ACM -z |
+while IFS= read -r -d '' f; do
+    [ -f "$f" ] || continue
+    size=$(wc -c < "$f" | tr -d ' ')
+    if [ "$size" -gt "$MAX_BYTES" ]; then
+        printf 'pre-commit: %s is %s bytes (limit %s)\n' "$f" "$size" "$MAX_BYTES" >&2
+        fail=1
+    fi
+    # The subshell created by the pipe makes $fail local; emit a marker instead.
+    if [ "$fail" -eq 1 ]; then
+        echo BLOCK
+    fi
+done | grep -q BLOCK && {
+    echo 'pre-commit: refusing commit; use git lfs or remove the large file.' >&2
+    exit 1
+}
+
+exit 0

@@ -1,0 +1,1186 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "One marker per country, sized by total queries over the selected time range. This is a playground stand-in for a proper choropleth — bubbles work out of the box with lat/lon; choropleth requires a GeoJSON gazetteer config to try later.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "super-light-green",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 10000
+              },
+              {
+                "color": "blue",
+                "value": 100000
+              },
+              {
+                "color": "yellow",
+                "value": 1000000
+              },
+              {
+                "color": "orange",
+                "value": 10000000
+              },
+              {
+                "color": "red",
+                "value": 100000000
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 23,
+        "w": 13,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "basemap": {
+          "name": "Basemap",
+          "type": "default"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "location": {
+                "latitude": "lat",
+                "longitude": "lon",
+                "mode": "coords"
+              },
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "queries",
+                  "fixed": "dark-blue"
+                },
+                "opacity": 0.7,
+                "size": {
+                  "field": "queries",
+                  "fixed": 5,
+                  "max": 30,
+                  "min": 4
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            },
+            "name": "Queries per country",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "allLayers": true,
+          "id": "fit",
+          "lat": 0,
+          "lon": 0,
+          "noRepeat": false,
+          "padding": 10,
+          "zoom": 1
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "queryType": "table",
+          "rawSql": "SELECT\n  coalesce(s.city, 'Unknown') AS city,\n  coalesce(s.country, 'Unknown') AS country,\n  coalesce(s.country_iso, '??') AS country_iso,\n  any(s.lat) AS lat,\n  any(s.lon) AS lon,\n  sum(o.value) AS queries\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\n  AND s.lat != 0\nGROUP BY city, country, country_iso\nORDER BY queries DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Queries per country (bubble map)",
+      "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Per-country QPS for the selected region. Sweden view reduces to a single line; world view shows every country with data.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 11,
+        "x": 13,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  coalesce(s.country, 'Unknown') AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by country",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Stacked per-qtype QPS for the selected region.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 11,
+        "x": 13,
+        "y": 12
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    o.key2 = '1', 'A',\n    o.key2 = '2', 'NS',\n    o.key2 = '5', 'CNAME',\n    o.key2 = '6', 'SOA',\n    o.key2 = '12', 'PTR',\n    o.key2 = '15', 'MX',\n    o.key2 = '16', 'TXT',\n    o.key2 = '28', 'AAAA',\n    o.key2 = '33', 'SRV',\n    o.key2 = '43', 'DS',\n    o.key2 = '46', 'RRSIG',\n    o.key2 = '47', 'NSEC',\n    o.key2 = '48', 'DNSKEY',\n    o.key2 = '50', 'NSEC3',\n    o.key2 = '52', 'TLSA',\n    o.key2 = '59', 'CDS',\n    o.key2 = '60', 'CDNSKEY',\n    o.key2 = '62', 'CSYNC',\n    o.key2 = '64', 'SVCB',\n    o.key2 = '65', 'HTTPS',\n    o.key2 = '255', 'ANY',\n    o.key2 = '257', 'CAA',\n    concat('TYPE', o.key2)\n  ) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by qtype",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Stacked per-transport QPS for the selected region. Source dataset: transport_vs_qtype (key1 = udp|tcp).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 23
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  upper(o.key1) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'transport_vs_qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.key1 IN ($transport)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by transport (UDP/TCP)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Stacked per-IP-version QPS for the selected region. Source dataset: dns_ip_version_vs_qtype (key1 = IPv4|IPv6).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 8,
+        "y": 23
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  o.key1 AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'dns_ip_version_vs_qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.key1 IN ($ipversion)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by IP version (IPv4/IPv6)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Stacked per-rcode QPS for the selected region.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 16,
+        "y": 23
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  multiIf(\n    o.key2 = '0', 'NOERROR',\n    o.key2 = '1', 'FORMERR',\n    o.key2 = '2', 'SERVFAIL',\n    o.key2 = '3', 'NXDOMAIN',\n    o.key2 = '4', 'NOTIMP',\n    o.key2 = '5', 'REFUSED',\n    o.key2 = '7', 'YXRRSET',\n    o.key2 = '9', 'NOTAUTH',\n    concat('RCODE', o.key2)\n  ) AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'rcode'\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by rcode",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Total queries per second aggregated by site service type. Anycast and unicast lines overlaid.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 15,
+        "x": 0,
+        "y": 33
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  s.service AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nINNER JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND o.site IN ($site)\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "A"
+        }
+      ],
+      "title": "QPS by service (anycast vs unicast)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Percentage of queries with the DNSSEC OK (DO) bit set. Source dataset: do_bit (key2 = set|clear).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 9,
+        "x": 15,
+        "y": 33
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  'DO set' AS series,\n  100.0 * sumIf(o.value, o.key2 = 'set') / nullIf(sum(o.value), 0) AS pct\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'do_bit'\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time\nORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "DO-bit set (% of queries)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource-giraffe",
+        "uid": "cfle7cwrdymm8f"
+      },
+      "description": "Total QPS and per-site breakdown. Source dataset: qtype.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "qps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TOTAL"
+            },
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 43
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  'TOTAL' AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time\nORDER BY time",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource-giraffe",
+            "uid": "cfle7cwrdymm8f"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n  toStartOfInterval(o.timestamp, INTERVAL 5 minute) AS time,\n  o.site AS series,\n  sum(o.value) / 300.0 AS qps\nFROM dsc.observations o\nLEFT JOIN dsc.sites s ON s.provider = o.provider AND s.site = o.site\nWHERE o.dataset = 'qtype'\n  AND multiIf(o.key2='1','A',o.key2='2','NS',o.key2='5','CNAME',o.key2='6','SOA',o.key2='12','PTR',o.key2='15','MX',o.key2='16','TXT',o.key2='28','AAAA',o.key2='33','SRV',o.key2='43','DS',o.key2='46','RRSIG',o.key2='47','NSEC',o.key2='48','DNSKEY',o.key2='50','NSEC3',o.key2='52','TLSA',o.key2='59','CDS',o.key2='60','CDNSKEY',o.key2='62','CSYNC',o.key2='64','SVCB',o.key2='65','HTTPS',o.key2='255','ANY',o.key2='257','CAA',concat('TYPE',o.key2)) IN ($qtype)\n  AND o.site IN ($site)\n  AND (\n    '$region' = 'world'\n    OR ('$region' = 'europe'  AND has(s.tags, 'Europe'))\n    OR ('$region' = 'nordics' AND has(s.tags, 'Nordics'))\n    OR ('$region' = 'sweden'  AND s.country_iso = 'SE')\n  )\n  AND $__timeFilter(o.timestamp)\nGROUP BY time, series\nORDER BY time, series",
+          "refId": "B"
+        }
+      ],
+      "title": "QPS by location — total + per site",
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "refresh": "1m",
+  "schemaVersion": 42,
+  "tags": [
+    "dsc",
+    "dns",
+    "playground"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "world",
+          "value": "world"
+        },
+        "includeAll": false,
+        "label": "Region",
+        "name": "region",
+        "options": [
+          {
+            "selected": true,
+            "text": "world",
+            "value": "world"
+          },
+          {
+            "selected": false,
+            "text": "europe",
+            "value": "europe"
+          },
+          {
+            "selected": false,
+            "text": "nordics",
+            "value": "nordics"
+          },
+          {
+            "selected": false,
+            "text": "sweden",
+            "value": "sweden"
+          }
+        ],
+        "query": "world, europe, nordics, sweden",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource-giraffe",
+          "uid": "cfle7cwrdymm8f"
+        },
+        "includeAll": true,
+        "label": "Site",
+        "multi": true,
+        "name": "site",
+        "options": [],
+        "query": "SELECT DISTINCT site FROM dsc.observations ORDER BY site",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource-giraffe",
+          "uid": "cfle7cwrdymm8f"
+        },
+        "includeAll": true,
+        "label": "Qtype",
+        "multi": true,
+        "name": "qtype",
+        "options": [],
+        "query": "SELECT DISTINCT multiIf(key2='1','A',key2='2','NS',key2='5','CNAME',key2='6','SOA',key2='12','PTR',key2='15','MX',key2='16','TXT',key2='28','AAAA',key2='33','SRV',key2='43','DS',key2='46','RRSIG',key2='47','NSEC',key2='48','DNSKEY',key2='50','NSEC3',key2='52','TLSA',key2='59','CDS',key2='60','CDNSKEY',key2='62','CSYNC',key2='64','SVCB',key2='65','HTTPS',key2='255','ANY',key2='257','CAA',concat('TYPE',key2)) AS qtype FROM dsc.observations WHERE dataset='qtype' ORDER BY qtype",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource-giraffe",
+          "uid": "cfle7cwrdymm8f"
+        },
+        "includeAll": true,
+        "label": "Rcode",
+        "multi": true,
+        "name": "rcode",
+        "options": [],
+        "query": "SELECT DISTINCT multiIf(key2='0','NOERROR',key2='1','FORMERR',key2='2','SERVFAIL',key2='3','NXDOMAIN',key2='4','NOTIMP',key2='5','REFUSED',key2='7','YXRRSET',key2='9','NOTAUTH',concat('RCODE',key2)) AS rcode FROM dsc.observations WHERE dataset='rcode' ORDER BY rcode",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": [
+            "IPv6"
+          ],
+          "value": [
+            "IPv6"
+          ]
+        },
+        "includeAll": true,
+        "label": "IP version",
+        "multi": true,
+        "name": "ipversion",
+        "options": [
+          {
+            "selected": false,
+            "text": "IPv4",
+            "value": "IPv4"
+          },
+          {
+            "selected": true,
+            "text": "IPv6",
+            "value": "IPv6"
+          }
+        ],
+        "query": "IPv4, IPv6",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "$__all",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "label": "Transport",
+        "multi": true,
+        "name": "transport",
+        "options": [
+          {
+            "selected": false,
+            "text": "udp",
+            "value": "udp"
+          },
+          {
+            "selected": false,
+            "text": "tcp",
+            "value": "tcp"
+          }
+        ],
+        "query": "udp, tcp",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "DSC Playground — Cross-Filter Experiment (EC2)",
+  "uid": "dsc-playground-v2-ec2",
+  "version": 2
+}

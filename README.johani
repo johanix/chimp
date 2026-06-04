@@ -1,0 +1,7 @@
+Set up tunnel to giraffe (EC2 running clickhouse):
+
+ssh -N -L 9001:localhost:9000 admin@13.48.26.214
+
+After cloning, activate the pre-commit hook (blocks files >5 MiB):
+
+git config core.hooksPath .githooks
